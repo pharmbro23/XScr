@@ -274,3 +274,4 @@ This is an MVP. Contributions welcome for:
 ---
 
 Built with ❤️ using FastAPI, Playwright, Google Gemini, and Telegram
+# XScr

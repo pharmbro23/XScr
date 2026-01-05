@@ -23,19 +23,46 @@ An MVP application that monitors Twitter accounts for financial signals, uses Go
 
 ## 🔧 Installation
 
-### 1. Clone and Setup
+### Option A: GitHub Codespaces (Recommended) ☁️
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/pharmbro23/XScr)
+
+1. **Click the badge above** or create a new Codespace from your repository
+2. **Install dependencies** (automatic in Codespaces):
+   ```bash
+   pip install -r requirements.txt
+   playwright install chromium --with-deps
+   ```
+
+3. **Configure environment** (see Configuration section below)
+
+> **Note**: Codespaces runs in a headless environment. Playwright will use headless mode automatically. If Twitter requires 2FA, you may need to run authentication locally first and copy the database file, or disable 2FA on your dedicated Twitter account.
+
+### Option B: Local Setup 💻
+
+#### 1. Clone and Setup
 
 ```bash
 cd XScr
 python -m venv venv
-venv\Scripts\activate  # On Windows
+
+# On Windows
+venv\Scripts\activate
+
+# On macOS/Linux
+source venv/bin/activate
+
 pip install -r requirements.txt
 ```
 
-### 2. Install Playwright Browsers
+#### 2. Install Playwright Browsers
 
 ```bash
+# Local machine (GUI available)
 playwright install chromium
+
+# Server/headless environment
+playwright install chromium --with-deps
 ```
 
 ### 3. Configure Environment Variables
@@ -43,10 +70,14 @@ playwright install chromium
 Copy `.env.example` to `.env`:
 
 ```bash
+# On Windows
 copy .env.example .env
+
+# On macOS/Linux/Codespaces
+cp .env.example .env
 ```
 
-Edit `.env` and fill in your credentials:
+Edit `.env` and fill in your credentials (use `nano .env` or the built-in editor in Codespaces):
 
 ```env
 TWITTER_USERNAME=your_twitter_username
@@ -81,14 +112,23 @@ GOOGLE_API_KEY=your_gemini_api_key
 Start the server with automatic background polling:
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-The API will be available at `http://localhost:8000`
+**On Local Machine:**
+- API will be available at `http://localhost:8000`
 - API docs: `http://localhost:8000/docs`
 - Health check: `http://localhost:8000/api/v1/health`
 
+**On GitHub Codespaces:**
+- Codespaces will automatically forward port 8000
+- Click the "Ports" tab in VS Code, then click the globe icon next to port 8000
+- Or use the auto-generated URL: `https://<your-codespace-name>-8000.preview.app.github.dev`
+- Access API docs at: `https://<your-codespace-name>-8000.preview.app.github.dev/docs`
+
 ### Option 2: Use the CLI
+
+The CLI works the same in both local and Codespaces environments:
 
 ```bash
 # Add a handle to track
@@ -204,20 +244,49 @@ XScr/
 
 ## 🐛 Troubleshooting
 
-### Session Expires
+### GitHub Codespaces Specific
+
+**Playwright Authentication Issues**
+- Codespaces runs headless by default (no GUI browser)
+- Twitter 2FA may not work in headless mode
+- **Solution 1**: Disable 2FA on your dedicated Twitter account
+- **Solution 2**: Run authentication locally first:
+  ```bash
+  # On local machine
+  python -m app.cli.commands poll  # This will trigger auth
+  # Copy data/app.db to Codespaces
+  ```
+- **Solution 3**: Modify `app/twitter/auth.py` line 26 to force headless mode with:
+  ```python
+  browser: Browser = p.chromium.launch(headless=True)
+  ```
+
+**Port Not Accessible**
+- Ensure you're using `--host 0.0.0.0` when running uvicorn
+- Check the "Ports" tab in VS Code to see forwarded ports
+- Port visibility should be "Public" for external access
+
+**Environment Variables Not Loading**
+- Verify `.env` file exists in the workspace root
+- Check file encoding is UTF-8
+- Restart the Codespace if needed
+
+### General Issues
+
+**Session Expires**
 - Delete `data/app.db` to force re-authentication
 - Check Twitter account isn't locked
 
-### No Tweets Found
+**No Tweets Found**
 - Verify tracked accounts have tweeted recently
 - Check that your Twitter account follows the targets
 - Review logs for HTML parsing errors
 
-### Telegram Not Sending
+**Telegram Not Sending**
 - Verify `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`
 - Test with: `curl "https://api.telegram.org/bot<TOKEN>/getMe"`
 
-### Gemini API Errors
+**Gemini API Errors**
 - Check `GOOGLE_API_KEY` is valid
 - Verify you have API quota remaining
 - Review Gemini API [pricing and limits](https://ai.google.dev/pricing)
@@ -274,4 +343,3 @@ This is an MVP. Contributions welcome for:
 ---
 
 Built with ❤️ using FastAPI, Playwright, Google Gemini, and Telegram
-# XScr
